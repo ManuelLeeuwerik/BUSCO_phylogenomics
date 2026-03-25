@@ -14,6 +14,8 @@ from os import listdir, chdir, mkdir, system
 from os.path import abspath, basename, isdir, join
 from time import gmtime, strftime
 import sys
+import subprocess
+import os
 
 from Bio import SeqIO
 from Bio.Seq import Seq
@@ -38,7 +40,18 @@ def main():
     parser.add_argument("--missing_character", type=str, action="store", dest="missing_character", help="Character to represent missing data [default='?']", default="?")
     parser.add_argument("--gene_tree_program", type=str, action="store", dest="gene_tree_program", default="fasttree", help="Program to use to generate gene trees (fasttree or iqtree) [default=fasttree]")
     parser.add_argument("--busco_version_3", action="store_true", help="Flag to indicate that BUSCO version 3 was used (which has slighly different output structure)")
+    parser.add_argument("--supermatrix_iqtree", action="store_true",
+                    help="Run IQ-TREE on the concatenated supermatrix alignment")
     
+    parser.add_argument("--filter_50", action="store_true",
+    help="Remove BUSCO genes where trimmed alignment length differs >=50 percent from original length")
+
+    parser.add_argument("--min_aa_length", type=int, default=None,
+    help="Minimum allowed trimmed AA alignment length (e.g. 167)")
+
+    parser.add_argument("--write_stats", action="store_true",
+    help="Write BUSCO filtering statistics to file")
+
     args = parser.parse_args()
 
     print_message("Starting BUSCO Phylogenomics Pipeline")
@@ -250,8 +263,8 @@ def main():
         mp_commands = []
         for busco in single_copy_buscos:
             mp_commands.append([join(working_directory, "supermatrix", "alignments", busco + ".aln"),
-                                join(working_directory, "supermatrix", "trimmed_alignments", busco + ".trimmed.aln"),
-                                trimal_strategy])
+                        join(working_directory, "supermatrix", "trimmed_alignments", busco + ".trimmed.aln"),
+                        trimal_strategy])
 
         run_parallel_with_progress(
             run_trimal,
@@ -260,7 +273,72 @@ def main():
             "Trimming alignments"
         )
 
-        print_message("Concatenating all trimmed alignments")
+# =========================================================
+#  BUSCO FILTERING STEP 
+# =========================================================
+        print_message("Applying BUSCO filtering")
+
+        filtered_buscos = []
+
+        stats = {
+            "initial": len(single_copy_buscos),
+            "after_50_filter": 0,
+            "after_length_filter": 0
+        }
+
+        for busco in single_copy_buscos:
+
+            orig_file = join(working_directory, "supermatrix", "sequences", busco + sequence_file_extension)
+            trim_file = join(working_directory, "supermatrix", "trimmed_alignments", busco + ".trimmed.aln")
+
+            # original length (first sequence)
+            orig_len = len(next(SeqIO.parse(orig_file, "fasta")).seq)
+
+            # trimmed alignment length
+            trim_len = len(next(SeqIO.parse(trim_file, "fasta")).seq)
+
+            keep = True
+
+            passed_50 = True
+            passed_length = True
+
+            # ---- 50% filter ----
+            if args.filter_50:
+                if (trim_len / orig_len) < 0.5:
+                    passed_50 = False
+
+            # count AFTER 50 filter
+            if passed_50:
+                stats["after_50_filter"] += 1
+            else:
+                keep = False
+
+            # ---- min length ----
+            if keep and args.min_aa_length:
+                if trim_len <= args.min_aa_length:
+                    passed_length = False
+
+            if keep and passed_length:
+                stats["after_length_filter"] += 1
+                filtered_buscos.append(busco)
+
+        print_message("Filtering complete")
+        print_message("Initial BUSCOs:", stats["initial"])
+        print_message("After 50 percent filter:", stats["after_50_filter"])
+        print_message("After length filter:", stats["after_length_filter"])
+
+        # ---- OPTIONAL: write stats ----
+        if args.write_stats:
+            with open(join(working_directory, "supermatrix", "BUSCO_filtering_stats.txt"), "w") as f:
+                f.write("Stage\tCount\n")
+                f.write(f"Initial_single_copy\t{stats['initial']}\n")
+                f.write(f"After_50_percent_filter\t{stats['after_50_filter']}\n")
+                f.write(f"After_min_length_filter\t{stats['after_length_filter']}\n")
+
+# =========================================================
+# CONCATENATION  uses filtered_buscos
+# =========================================================
+        print_message("Concatenating filtered alignments")
 
         chdir("trimmed_alignments")
 
@@ -269,34 +347,37 @@ def main():
         for busco_sample_name in busco_sample_names:
             alignments[busco_sample_name] = ""
 
-        start = 1 # tracking lengths for partitions file
+        start = 1  # tracking lengths for partitions file
 
         # If psc == 100; we can just concatenate alignments (no missing data)
         if args.psc == 100:
-            for alignment in listdir("."):
-                if alignment.endswith(".trimmed.aln"):
-                    for record in SeqIO.parse(alignment, "fasta"):
-                        alignments[str(record.id)] += str(record.seq)
-                    partitions.append([alignment.replace(".trimmed.aln", ""), start, start + len(str(record.seq)) - 1])
-                    start += len(record.seq)
+            for busco in filtered_buscos:
+                alignment = busco + ".trimmed.aln"
+
+                for record in SeqIO.parse(alignment, "fasta"):
+                    alignments[str(record.id)] += str(record.seq)
+
+                partitions.append([busco, start, start + len(str(record.seq)) - 1])
+                start += len(record.seq)
+
         else:
-            # we need to handle missing data here
-            for alignment in listdir("."):
-                if alignment.endswith(".trimmed.aln"):
-                    check_samples = busco_sample_names[:]
+            # handle missing data
+            for busco in filtered_buscos:
+                alignment = busco + ".trimmed.aln"
 
-                    for record in SeqIO.parse(alignment, "fasta"):
-                        alignments[str(record.id)] += str(record.seq)
-                        check_samples.remove(str(record.id))
+                check_samples = busco_sample_names[:]
 
-                    partitions.append([alignment.replace(".trimmed.aln", ""), start, start + len(str(record.seq)) - 1])
-                    start += len(record.seq)
+                for record in SeqIO.parse(alignment, "fasta"):
+                    alignments[str(record.id)] += str(record.seq)
+                    check_samples.remove(str(record.id))
 
-                    if len(check_samples) > 0:
-                        # This means some species were missing this busco, fill alignment with missing character ("?" is default)
-                        seq_len = len(str(record.seq))
-                        for sample in check_samples:
-                            alignments[sample] += (args.missing_character * seq_len)
+                partitions.append([busco, start, start + len(str(record.seq)) - 1])
+                start += len(record.seq)
+
+                if len(check_samples) > 0:
+                    seq_len = len(str(record.seq))
+                    for sample in check_samples:
+                        alignments[sample] += (args.missing_character * seq_len)
 
         chdir(working_directory)
         chdir("supermatrix")
@@ -328,6 +409,28 @@ def main():
         print_message("Supermatrix alignment length is ", str(len(alignments[sample])))
 
         print()
+        
+        supermatrix_dir = join(working_directory, "supermatrix")
+        supermatrix_fasta = join(supermatrix_dir, "SUPERMATRIX.fasta")
+        
+        # Run ClipKIT
+        clipkit_output = run_clipkit(supermatrix_fasta, supermatrix_dir, gap_threshold=0.05)
+
+        # ---- RUN IQ-TREE ON SUPERMATRIX ----
+        if args.supermatrix_iqtree:
+        
+            print_message("Running IQ-TREE on concatenated supermatrix")
+
+            iqtree_cmd = (
+            f"iqtree "
+            f"-s {clipkit_output} "
+            f"-T " + str(threads) + " "
+            f"-m MFP "
+            f"-B 1000 "
+            f"--prefix supermatrix_tree"
+            )
+
+            system(iqtree_cmd)
 
     if not args.supermatrix_only:
         print_message("Identifying BUSCOs that are complete and single-copy in at least 4 species")
@@ -469,6 +572,24 @@ def run_parallel_with_progress(func, commands, threads, desc):
             desc=desc
         ):
             pass
+
+def run_clipkit(supermatrix_fasta, output_dir, gap_threshold="0.05"):
+    print("Running ClipKIT on supermatrix")
+    
+    output_file = os.path.join(output_dir, "SUPERMATRIX.degapped.fasta")
+    
+    subprocess.run([
+        "clipkit",
+        supermatrix_fasta,
+        "-m", "gappy",
+        "-g", str(gap_threshold),
+        "-o", output_file
+    ], check=True)
+    
+    print(f"ClipKIT finished. Degapped supermatrix written to {output_file}")
+    
+    return output_file
+
 
 def print_message(*message):
     print(strftime("%d-%m-%Y %H:%M:%S", gmtime()) + "\t" + " ".join(map(str, message)))

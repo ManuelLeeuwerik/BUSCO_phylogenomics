@@ -140,6 +140,26 @@ This will report how many BUSCOs are complete and single-copy in what percentage
 
 If you used BUSCO version 3 you should use the flag `--busco_version_3` as the output structure of this version of BUSCO is slightly different to that of versions 4 and 5.
 
+
+From: https://github.com/jamiemcg/BUSCO_phylogenomics
+
+To run:
+```
+python BUSCO_phylogenomics.py \
+  -i /data/users/m.leeuwerik/busco_phylogeny/Buscogeny/test_phylo_Buscogeny_out/BUSCO \
+  -o test_out2 \
+  -t 30 \
+  --supermatrix_only \
+  --supermatrix_iqtree \
+  --filter_50 \
+  --min_aa_length 167 \
+  --write_stats
+```
+
+No automatic output of one tree from supermatrix.fasta.
+Added a now function for that --supermatrix_iqtree so you do not have a seperate 
+
+
 <details>
 <summary><strong>Publications that use the BUSCO_phylogenomics pipeline (to Feb 2026; N = 105):</strong></summary>
 
