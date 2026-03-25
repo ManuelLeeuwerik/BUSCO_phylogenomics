@@ -147,18 +147,30 @@ To run:
 ```
 python BUSCO_phylogenomics.py \
   -i /data/users/m.leeuwerik/busco_phylogeny/Buscogeny/test_phylo_Buscogeny_out/BUSCO \
-  -o test_out2 \
+  -o test_out5 \
   -t 30 \
   --supermatrix_only \
   --supermatrix_iqtree \
   --filter_50 \
-  --min_aa_length 167 \
-  --write_stats
+  --write_stats \
+  --top_pis 1000
 ```
 
-No automatic output of one tree from supermatrix.fasta.
-Added a now function for that --supermatrix_iqtree so you do not have a seperate 
+Filtering AA length:
+AA 167 based on  https://journals.asm.org/doi/10.1128/mbio.00925-19 
+AA 300 based on https://www.science.org/doi/10.1126/sciadv.abd0079
 
+Added a new function for tree creation of multi alignment file --supermatrix_iqtree 
+--filter_50 is removing genes were alignments differed by 50% 
+
+
+https://journals.asm.org/doi/10.1128/mbio.01519-22
+https://www.mdpi.com/2309-608X/10/3/205 
+https://pmc.ncbi.nlm.nih.gov/articles/PMC12621884/#S25
+https://journals.asm.org/doi/10.1128/mbio.00925-19
+https://link.springer.com/article/10.1007/s10123-025-00752-6
+https://www.science.org/doi/10.1126/sciadv.abd0079 
+https://academic.oup.com/gbe/article/8/8/2565/2198327?login=false 
 
 <details>
 <summary><strong>Publications that use the BUSCO_phylogenomics pipeline (to Feb 2026; N = 105):</strong></summary>

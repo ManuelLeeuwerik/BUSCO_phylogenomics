@@ -52,6 +52,9 @@ def main():
     parser.add_argument("--write_stats", action="store_true",
     help="Write BUSCO filtering statistics to file")
 
+    parser.add_argument("--top_pis", type=int, default=None,
+    help="Keep top X BUSCO genes based on parsimony-informative sites")
+
     args = parser.parse_args()
 
     print_message("Starting BUSCO Phylogenomics Pipeline")
@@ -335,6 +338,35 @@ def main():
                 f.write(f"After_50_percent_filter\t{stats['after_50_filter']}\n")
                 f.write(f"After_min_length_filter\t{stats['after_length_filter']}\n")
 
+
+        trimmed_dir = join(working_directory, "supermatrix", "trimmed_alignments")
+        alignment_files = [
+            join(trimmed_dir, busco + ".trimmed.aln")
+            for busco in filtered_buscos
+        ]
+
+        pis_results = []
+        for aln in tqdm(alignment_files, desc="Calculating PIS for alignments"):
+            busco = os.path.basename(aln).replace(".trimmed.aln", "")
+            result = calculate_pis(aln)
+            pis_results.append((busco, *result[1:]))
+        
+        # Sort by number of parsimony-informative sites (descending)
+        pis_results.sort(key=lambda x: x[1], reverse=True)
+
+        if args.top_pis:
+            selected_buscos = [x[0] for x in pis_results[:args.top_pis]]
+        else:
+            selected_buscos = filtered_buscos
+
+        # Write stats for confirmation
+        with open(join(working_directory, "supermatrix", "BUSCO_PIS_stats.txt"), "w") as f:
+            f.write("Alignment\tPIS\tTotal_sites\tPIS_percentage\n")
+            for r in pis_results:
+                f.write(f"{os.path.basename(r[0])}\t{r[1]}\t{r[2]}\t{r[3]:.2f}\n")
+
+        print_message("Final BUSCOs after PIS selection:", len(selected_buscos))
+
 # =========================================================
 # CONCATENATION  uses filtered_buscos
 # =========================================================
@@ -351,7 +383,7 @@ def main():
 
         # If psc == 100; we can just concatenate alignments (no missing data)
         if args.psc == 100:
-            for busco in filtered_buscos:
+            for busco in selected_buscos:
                 alignment = busco + ".trimmed.aln"
 
                 for record in SeqIO.parse(alignment, "fasta"):
@@ -362,7 +394,7 @@ def main():
 
         else:
             # handle missing data
-            for busco in filtered_buscos:
+            for busco in selected_buscos:
                 alignment = busco + ".trimmed.aln"
 
                 check_samples = busco_sample_names[:]
@@ -590,6 +622,25 @@ def run_clipkit(supermatrix_fasta, output_dir, gap_threshold="0.05"):
     
     return output_file
 
+def calculate_pis(alignment_file, phykit_cmd="phykit", top_x=None):
+
+    # Run PhyKIT command
+    cmd = [phykit_cmd, "pis", alignment_file]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    
+    if result.returncode != 0:
+        print(f"Error running PhyKIT on {alignment_file}")
+        return (alignment_file, 0, 0, 0.0)
+    
+    # PhyKIT output: col1 = PIS, col2 = total sites, col3 = % PIS
+    line = result.stdout.strip()
+    try:
+        pis_count, total_sites, pis_percentage = map(float, line.split())
+    except ValueError:
+        print(f"Unexpected output from PhyKIT on {alignment_file}: {line}")
+        pis_count, total_sites, pis_percentage = 0, 0, 0.0
+    
+    return (alignment_file, int(pis_count), int(total_sites), pis_percentage)
 
 def print_message(*message):
     print(strftime("%d-%m-%Y %H:%M:%S", gmtime()) + "\t" + " ".join(map(str, message)))

@@ -10,3 +10,5 @@ dependencies:
   - fasttree
   - tqdm
   - mafft
+  - clipkit
+  - phykit

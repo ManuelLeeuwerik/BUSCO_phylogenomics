@@ -1,8 +1,7 @@
 test-data/
 testing/
-test_out2
-test_out
-test_out3
+test_out*
+
 # Created by https://www.gitignore.io/api/osx,macos,python,pycharm,visualstudiocode
 
 ### macOS ###
