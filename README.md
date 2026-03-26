@@ -122,10 +122,10 @@ python BUSCO_phylogenomics.py \
 
 This creates:
 - sequences: contains all single copy BUSCO genes which are present in 100% of the samples
-- alignments per gene for all isolates
-- trimmed_alignments: alignments trimmed with trimal
+- alignments: alignments per gene for all isolates
+- trimmed_alignments: alignments which were trimmed with trimal
 - Trimmed alignments are then filtered: 
-	- Where trimmed alignment length differs >=50% from original length
+	- Where trimmed alignment length differs >=50% from original sequence length
 	- Can be filtered on minimum AA alignment length
 	- Based on top BUSCO genes based on parsimony-informative sites
 - Concatenated alignment in FASTA
