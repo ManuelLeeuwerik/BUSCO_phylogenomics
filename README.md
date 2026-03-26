@@ -31,6 +31,8 @@ The pipeline requires the following dependencies:
 - [fasttree](http://www.microbesonline.org/fasttree/)
 - [iqtree](http://www.iqtree.org/)
 - [tqdm](https://github.com/tqdm/tqdm)
+- [clipkit](https://github.com/jlsteenwyk/clipkit)
+- [phykit](https://github.com/JLSteenwyk/PhyKIT)
 
 These should be available from your `$PATH`.
 
@@ -44,8 +46,7 @@ BUSCO_phylogenomics.py --help
 count_buscos.py --help
 ```
 
-
-Alternatively, you can manually install the packages and dependencies using conda with the provided yaml file `conda_env.yaml`, which will create a conda environment called BUSCO_phylogenomics
+Alternatively, you can manually install the packages and dependencies using conda with the provided yaml file `conda_env.yaml`, which will create a conda environment called BUSCO_phylogenomics (***this reflects updated dependencies**).
 
 ```
 git clone https://github.com/jamiemcg/BUSCO_phylogenomics
@@ -97,9 +98,43 @@ options:
                         iqtree) [default=fasttree]
   --busco_version_3     Flag to indicate that BUSCO version 3 was used (which
                         has slighly different output structure)
+  --supermatrix_iqtree  Run IQ-TREE on the concatenated supermatrix alignment
+  --filter_50 			Remove BUSCO genes where trimmed alignment length differs >=50% from original length
+  --min_aa_length		Minimum allowed trimmed AA alignment length (e.g. 167, default 0)
+  --write_stats			Write BUSCO filtering statistics to file
+  --top_pis				Keep top X BUSCO genes based on parsimony-informative sites (counts)
 ```
 
 You should move all of your completed BUSCO output directories into the same directory.
+
+To run:
+```bash
+python BUSCO_phylogenomics.py \
+  -i input_dir_BUSCO_results \
+  -o phylogenomics_results \
+  -t 30 \
+  --supermatrix_only \
+  --supermatrix_iqtree \
+  --filter_50 \
+  --write_stats \
+  --top_pis 1000
+```
+
+This creates:
+- sequences: contains all single copy BUSCO genes which are present in 100% of the samples
+- alignments per gene for all isolates
+- trimmed_alignments: alignments trimmed with trimal
+- Trimmed alignments are then filtered: 
+	- Where trimmed alignment length differs >=50% from original length
+	- Can be filtered on minimum AA alignment length
+	- Based on top BUSCO genes based on parsimony-informative sites
+- Concatenated alignment in FASTA
+- Concatenated alignment degapped with Clipkit (0.05 gap treshold)
+- supermatrix_tree.treefile based on concatenated alignment from IQtree (-m MFP, -B 1000)
+
+Examples of papers filtering on AA length in BUSCO genes:
+- 167 AA based on  https://journals.asm.org/doi/10.1128/mbio.00925-19 
+- 300 AA based on https://www.science.org/doi/10.1126/sciadv.abd0079
 
 
 **Example usage:**
@@ -139,38 +174,6 @@ python count_buscos.py -i BUSCO_runs
 This will report how many BUSCOs are complete and single-copy in what percentage of samples and print a presence/absence table for each BUSCO family.
 
 If you used BUSCO version 3 you should use the flag `--busco_version_3` as the output structure of this version of BUSCO is slightly different to that of versions 4 and 5.
-
-
-From: https://github.com/jamiemcg/BUSCO_phylogenomics
-
-To run:
-```
-python BUSCO_phylogenomics.py \
-  -i /data/users/m.leeuwerik/busco_phylogeny/Buscogeny/test_phylo_Buscogeny_out/BUSCO \
-  -o test_out5 \
-  -t 30 \
-  --supermatrix_only \
-  --supermatrix_iqtree \
-  --filter_50 \
-  --write_stats \
-  --top_pis 1000
-```
-
-Filtering AA length:
-AA 167 based on  https://journals.asm.org/doi/10.1128/mbio.00925-19 
-AA 300 based on https://www.science.org/doi/10.1126/sciadv.abd0079
-
-Added a new function for tree creation of multi alignment file --supermatrix_iqtree 
---filter_50 is removing genes were alignments differed by 50% 
-
-
-https://journals.asm.org/doi/10.1128/mbio.01519-22
-https://www.mdpi.com/2309-608X/10/3/205 
-https://pmc.ncbi.nlm.nih.gov/articles/PMC12621884/#S25
-https://journals.asm.org/doi/10.1128/mbio.00925-19
-https://link.springer.com/article/10.1007/s10123-025-00752-6
-https://www.science.org/doi/10.1126/sciadv.abd0079 
-https://academic.oup.com/gbe/article/8/8/2565/2198327?login=false 
 
 <details>
 <summary><strong>Publications that use the BUSCO_phylogenomics pipeline (to Feb 2026; N = 105):</strong></summary>

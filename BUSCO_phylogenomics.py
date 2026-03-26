@@ -40,20 +40,12 @@ def main():
     parser.add_argument("--missing_character", type=str, action="store", dest="missing_character", help="Character to represent missing data [default='?']", default="?")
     parser.add_argument("--gene_tree_program", type=str, action="store", dest="gene_tree_program", default="fasttree", help="Program to use to generate gene trees (fasttree or iqtree) [default=fasttree]")
     parser.add_argument("--busco_version_3", action="store_true", help="Flag to indicate that BUSCO version 3 was used (which has slighly different output structure)")
-    parser.add_argument("--supermatrix_iqtree", action="store_true",
-                    help="Run IQ-TREE on the concatenated supermatrix alignment")
     
-    parser.add_argument("--filter_50", action="store_true",
-    help="Remove BUSCO genes where trimmed alignment length differs >=50 percent from original length")
-
-    parser.add_argument("--min_aa_length", type=int, default=None,
-    help="Minimum allowed trimmed AA alignment length (e.g. 167)")
-
-    parser.add_argument("--write_stats", action="store_true",
-    help="Write BUSCO filtering statistics to file")
-
-    parser.add_argument("--top_pis", type=int, default=None,
-    help="Keep top X BUSCO genes based on parsimony-informative sites")
+    parser.add_argument("--supermatrix_iqtree", action="store_true", help="Run IQ-TREE on the concatenated supermatrix alignment")
+    parser.add_argument("--filter_50", action="store_true", help="Remove BUSCO genes where trimmed alignment length differs >=50 percent from original length")
+    parser.add_argument("--min_aa_length", type=int, default=None, help="Minimum allowed trimmed AA alignment length (e.g. 167)")
+    parser.add_argument("--write_stats", action="store_true", help="Write BUSCO filtering statistics to file")
+    parser.add_argument("--top_pis", type=int, default=None, help="Keep top X BUSCO genes based on parsimony-informative sites")
 
     args = parser.parse_args()
 
@@ -352,6 +344,7 @@ def main():
             pis_results.append((busco, *result[1:]))
         
         # Sort by number of parsimony-informative sites (descending)
+        # Could also be percentage x[3]
         pis_results.sort(key=lambda x: x[1], reverse=True)
 
         if args.top_pis:
