@@ -110,14 +110,13 @@ You should move all of your completed BUSCO output directories into the same dir
 To run:
 ```bash
 python BUSCO_phylogenomics.py \
-  -i input_dir_BUSCO_results \
-  -o phylogenomics_results \
+  -i /data/users/m.leeuwerik/busco_phylogeny/Buscogeny/test_phylo_Buscogeny_out/BUSCO \
+  -o test_out \
   -t 30 \
   --supermatrix_only \
   --supermatrix_iqtree \
   --filter_50 \
-  --write_stats \
-  --top_pis 1000
+  --write_stats
 ```
 
 This creates:

@@ -35,7 +35,7 @@ rule miniprot:
         genome = f"{GENOME_DIR}/{{sample}}.fasta",
         buscos = f"{OUTDIR}/all_buscos.faa"
     output:
-        f"{OUTDIR}/miniprot/{{sample}}.paf"
+        gff = f"{OUTDIR}/miniprot/{{sample}}.gff"
     log:
         f"{OUTDIR}/logs/miniprot/{{sample}}.log"
     threads: config["miniprot_threads"]
@@ -44,22 +44,27 @@ rule miniprot:
     shell:
         """
         mkdir -p {OUTDIR}/logs/miniprot
-        miniprot -t {threads} {input.genome} {input.buscos} > {output} 2> {log}
+        miniprot --gff-only -t {threads} {input.genome} {input.buscos} > {output.gff} 2> {log}
         """
 
 # -------------------------------
 rule extract_buscos:
 # -------------------------------
     input:
-        paf = f"{OUTDIR}/miniprot/{{sample}}.paf",
+        gff = f"{OUTDIR}/miniprot/{{sample}}.gff",
         genome = f"{GENOME_DIR}/{{sample}}.fasta"
     output:
+        buscodir = directory(f"{OUTDIR}/fake_busco/{{sample}}/run_aspergillus_odb12/busco_sequences/single_copy_busco_sequences"),
         done = f"{OUTDIR}/fake_busco/{{sample}}/extract.done"
     conda:
-        "envs/python.yaml"
-    script:
-        "scripts/extract_buscos.py"
-
+        "envs/gffread.yaml"
+    shell:
+        """
+        mkdir -p {output.buscodir}
+        # Extract all CDS as protein sequences
+        gffread -g {input.genome} -F -E -C -V -J -y {output.buscodir}/all_buscos.faa {input.gff}
+        touch {output.done}
+        """
 # -------------------------------
 rule run_phylogenomics:
 # -------------------------------
