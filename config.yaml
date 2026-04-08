@@ -1,0 +1,29 @@
+samples:
+  - 4ECUM2R3
+  - 9COLM1R4
+  - 45COLM1R4
+  - 52PRYM1R1
+  - 53COLM11R4
+  - 54ECUM2R2
+  - 55COLM2R2
+  - 55ECUM1R1
+  - 55ECUM1R4
+  - 55ECUM1R4V2
+  - 55PRYM2R1
+  - 57COLM1R3
+  - 61COLM1R22
+  - 69ECUM1R1
+  - 75ECUM1R4
+  - 77COLM2R1
+  - 83ECUM2R3
+  - 85ECUM1R1
+  - 86ECUM1R4
+  - 86ECUM1R4V2
+  - 93ECUM2R1
+
+genome_dir: "genomes"
+busco_ref_dir: "A1163/run_aspergillus_odb12/busco_sequences/single_copy_busco_sequences"
+outdir: "results_snakemake"
+
+threads: 30
+miniprot_threads: 4

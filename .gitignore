@@ -1,7 +1,10 @@
 test-data/
 testing/
 test_out*
-
+A1163/
+genomes/
+results_snakemake/*
+.snakemake/
 # Created by https://www.gitignore.io/api/osx,macos,python,pycharm,visualstudiocode
 
 ### macOS ###

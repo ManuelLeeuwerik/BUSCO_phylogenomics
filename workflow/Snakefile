@@ -1,0 +1,90 @@
+import os
+import glob
+
+configfile: "config.yaml"
+
+SAMPLES = config["samples"]
+GENOME_DIR = config["genome_dir"]
+BUSCO_REF = config["busco_ref_dir"]
+OUTDIR = config["outdir"]
+
+rule all:
+    input:
+        expand(f"{OUTDIR}/fake_busco/{{sample}}/extract.done", sample=SAMPLES),
+        f"{OUTDIR}/phylogenomics_done.txt"
+
+# -------------------------------
+rule concat_buscos:
+# -------------------------------
+    input:
+        expand(f"{BUSCO_REF}/{{busco}}.faa",
+               busco=[os.path.basename(f).replace(".faa", "") for f in glob.glob(f"{BUSCO_REF}/*.faa")])
+    output:
+        f"{OUTDIR}/all_buscos.faa"
+    conda:
+        "envs/python.yaml"
+    shell:
+        """
+        cat {input} | awk '/^>/{{sub(/_.*/,"");}}1' > {output}
+        """
+
+# -------------------------------
+rule miniprot:
+# -------------------------------
+    input:
+        genome = f"{GENOME_DIR}/{{sample}}.fasta",
+        buscos = f"{OUTDIR}/all_buscos.faa"
+    output:
+        f"{OUTDIR}/miniprot/{{sample}}.paf"
+    log:
+        f"{OUTDIR}/logs/miniprot/{{sample}}.log"
+    threads: config["miniprot_threads"]
+    conda:
+        "envs/miniprot.yaml"
+    shell:
+        """
+        mkdir -p {OUTDIR}/logs/miniprot
+        miniprot -t {threads} {input.genome} {input.buscos} > {output} 2> {log}
+        """
+
+# -------------------------------
+rule extract_buscos:
+# -------------------------------
+    input:
+        paf = f"{OUTDIR}/miniprot/{{sample}}.paf",
+        genome = f"{GENOME_DIR}/{{sample}}.fasta"
+    output:
+        done = f"{OUTDIR}/fake_busco/{{sample}}/extract.done"
+    conda:
+        "envs/python.yaml"
+    script:
+        "scripts/extract_buscos.py"
+
+# -------------------------------
+rule run_phylogenomics:
+# -------------------------------
+    input:
+        expand(f"{OUTDIR}/fake_busco/{{sample}}/extract.done", sample=SAMPLES)
+    output:
+        f"{OUTDIR}/phylogenomics_done.txt"
+    log:
+        f"{OUTDIR}/logs/phylogenomics.log"
+    threads: config["threads"]
+    conda:
+        "envs/BUSCO_phylogenomics.yaml"
+    shell:
+        """
+        mkdir -p {OUTDIR}/logs
+
+        python BUSCO_phylogenomics.py \
+            -i {OUTDIR}/fake_busco \
+            -o {OUTDIR}/phylo \
+            -t {threads} \
+            --supermatrix_only \
+            --supermatrix_iqtree \
+            --filter_50 \
+            --write_stats \
+            > {log} 2>&1
+
+        touch {output}
+        """
