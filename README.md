@@ -1,5 +1,13 @@
 # BUSCO_Phylogenomics
 
+
+From reference gene set -> miniprot on genome -> gff to extract fasta sequences -> phylogenomics
+
+Need to compare "new" gene length with old (reference) gene length.
+
+-V  discard any mRNAs with CDS having in-frame stop codons
+-J  discard any mRNAs that either lack initial START codon or the terminal STOP codon, or have an in-frame stop codon (only print mRNAs with a fulll, valid CDS)
+
 [![install with bioconda](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg?style=flat)](http://bioconda.github.io/recipes/busco_phylogenomics/README.html)
 
 

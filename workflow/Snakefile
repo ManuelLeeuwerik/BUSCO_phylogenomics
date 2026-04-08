@@ -56,13 +56,45 @@ rule extract_buscos:
     output:
         buscodir = directory(f"{OUTDIR}/fake_busco/{{sample}}/run_aspergillus_odb12/busco_sequences/single_copy_busco_sequences"),
         done = f"{OUTDIR}/fake_busco/{{sample}}/extract.done"
+    log:
+        f"{OUTDIR}/logs/gffread/{{sample}}.log"
     conda:
         "envs/gffread.yaml"
     shell:
         """
         mkdir -p {output.buscodir}
-        # Extract all CDS as protein sequences
-        gffread -g {input.genome} -F -E -C -V -J -y {output.buscodir}/all_buscos.faa {input.gff}
+        mkdir -p {OUTDIR}/logs/gffread
+
+        # Extract proteins
+        gffread -g {input.genome} -F -E -C -y {output.buscodir}/all_buscos.faa {input.gff} > {log} 2>&1
+
+        # Fix headers: use Target as FASTA ID
+        awk '/^>/ {{
+            match($0, /Target=([^ ]+)/, arr);
+            if (arr[1] != "") {{
+                print ">" arr[1];
+            }} else {{
+                print $0;
+            }}
+            next
+        }}
+        {{print}}' {output.buscodir}/all_buscos.faa > {output.buscodir}/tmp.faa
+
+        mv {output.buscodir}/tmp.faa {output.buscodir}/all_buscos.faa
+
+        # 3. Split per BUSCO gene
+        awk -v outdir="{output.buscodir}" '
+        /^>/ {{
+            fname = substr($0,2) ".faa";
+            file = outdir "/" fname;
+            print $0 > file;
+            next
+        }}
+        {{
+            print >> file
+        }}' {output.buscodir}/all_buscos.faa
+
+        rm {output.buscodir}/all_buscos.faa
         touch {output.done}
         """
 # -------------------------------
