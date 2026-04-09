@@ -20,6 +20,7 @@ samples:
   - 86ECUM1R4
   - 86ECUM1R4V2
   - 93ECUM2R1
+  - A1163
 
 genome_dir: "genomes"
 busco_ref_dir: "A1163/run_aspergillus_odb12/busco_sequences/single_copy_busco_sequences"

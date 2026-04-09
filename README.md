@@ -8,6 +8,14 @@ Need to compare "new" gene length with old (reference) gene length.
 -V  discard any mRNAs with CDS having in-frame stop codons
 -J  discard any mRNAs that either lack initial START codon or the terminal STOP codon, or have an in-frame stop codon (only print mRNAs with a fulll, valid CDS)
 
+If no V and J all genes remain, also duplicate, fragmented etc. Look carefully back at this.
+With these a lot of diversity is lost 
+
+https://open.bioqueue.org/home/knowledge/showKnowledge/sig/gffread
+https://lh3.github.io/miniprot/miniprot.html
+
+Only -V?
+
 [![install with bioconda](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg?style=flat)](http://bioconda.github.io/recipes/busco_phylogenomics/README.html)
 
 

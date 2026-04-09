@@ -330,35 +330,35 @@ def main():
                 f.write(f"After_50_percent_filter\t{stats['after_50_filter']}\n")
                 f.write(f"After_min_length_filter\t{stats['after_length_filter']}\n")
 
-
         trimmed_dir = join(working_directory, "supermatrix", "trimmed_alignments")
         alignment_files = [
             join(trimmed_dir, busco + ".trimmed.aln")
             for busco in filtered_buscos
         ]
 
-        pis_results = []
-        for aln in tqdm(alignment_files, desc="Calculating PIS for alignments"):
-            busco = os.path.basename(aln).replace(".trimmed.aln", "")
-            result = calculate_pis(aln)
-            pis_results.append((busco, *result[1:]))
-        
-        # Sort by number of parsimony-informative sites (descending)
-        # Could also be percentage x[3]
-        pis_results.sort(key=lambda x: x[1], reverse=True)
-
+        # ---- ONLY CALCULATE PIS IF top_pis IS SET ----
         if args.top_pis:
+            pis_results = []
+            for aln in tqdm(alignment_files, desc="Calculating PIS for alignments"):
+                busco = os.path.basename(aln).replace(".trimmed.aln", "")
+                result = calculate_pis(aln)
+                pis_results.append((busco, *result[1:]))
+            
+            # Sort by number of parsimony-informative sites (descending)
+            pis_results.sort(key=lambda x: x[1], reverse=True)
+
             selected_buscos = [x[0] for x in pis_results[:args.top_pis]]
+
+            # Write stats for confirmation
+            with open(join(working_directory, "supermatrix", "BUSCO_PIS_stats.txt"), "w") as f:
+                f.write("Alignment\tPIS\tTotal_sites\tPIS_percentage\n")
+                for r in pis_results:
+                    f.write(f"{os.path.basename(r[0])}\t{r[1]}\t{r[2]}\t{r[3]:.2f}\n")
+
+            print_message("Final BUSCOs after PIS selection:", len(selected_buscos))
         else:
+            # If top_pis not set, just use filtered BUSCOs
             selected_buscos = filtered_buscos
-
-        # Write stats for confirmation
-        with open(join(working_directory, "supermatrix", "BUSCO_PIS_stats.txt"), "w") as f:
-            f.write("Alignment\tPIS\tTotal_sites\tPIS_percentage\n")
-            for r in pis_results:
-                f.write(f"{os.path.basename(r[0])}\t{r[1]}\t{r[2]}\t{r[3]:.2f}\n")
-
-        print_message("Final BUSCOs after PIS selection:", len(selected_buscos))
 
 # =========================================================
 # CONCATENATION  uses filtered_buscos
