@@ -102,17 +102,16 @@ rule extract_buscos:
 rule check_buscos:
 # -------------------------------
     input:
-        buscodir = directory(f"{OUTDIR}/fake_busco/{{sample}}/run_aspergillus_odb12/busco_sequences/single_copy_busco_sequences")
+        expand(f"{OUTDIR}/fake_busco/{{sample}}/extract.done", sample=SAMPLES)
     output:
-        done = f"{OUTDIR}/fake_busco/{{sample}}/check.done"
+        done = f"{OUTDIR}/fake_busco/check.done",
+        log = f"{OUTDIR}/logs/busco_cleanup.log"
     conda:
         "envs/python.yaml"
-    log:
-        f"{OUTDIR}/logs/busco_cleanup/{{sample}}.log"
     shell:
         """
-        mkdir -p {OUTDIR}/logs/busco_cleanup
-        python3 workflow/scripts/check_fasta.py > {log} 2>&1
+        mkdir -p {OUTDIR}/logs
+        python3 workflow/scripts/check_fasta.py {OUTDIR}/fake_busco > {output.log} 2>&1
         touch {output.done}
         """
 # -------------------------------
@@ -120,7 +119,7 @@ rule run_phylogenomics:
 # -------------------------------
     input:
         expand(f"{OUTDIR}/fake_busco/{{sample}}/extract.done", sample=SAMPLES),
-        expand(f"{OUTDIR}/fake_busco/{{sample}}/check.done", sample=SAMPLES)
+        f"{OUTDIR}/fake_busco/check.done"
     output:
         f"{OUTDIR}/phylogenomics_done.txt"
     log:
@@ -134,7 +133,7 @@ rule run_phylogenomics:
 
         python BUSCO_phylogenomics.py \
             -i {OUTDIR}/fake_busco \
-            -o {OUTDIR}/phylo_2 \
+            -o {OUTDIR}/phylo \
             -t {threads} \
             --supermatrix_only \
             --supermatrix_iqtree \

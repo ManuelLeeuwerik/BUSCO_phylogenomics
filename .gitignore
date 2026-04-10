@@ -4,6 +4,7 @@ test_out*
 A1163/
 genomes/
 results_snakemake/*
+results_snakemake_env_LatAsp/*
 .snakemake/
 # Created by https://www.gitignore.io/api/osx,macos,python,pycharm,visualstudiocode
 
