@@ -133,7 +133,7 @@ rule run_phylogenomics:
 
         python BUSCO_phylogenomics.py \
             -i {OUTDIR}/fake_busco \
-            -o {OUTDIR}/phylo \
+            -o {OUTDIR}/phylo_LatAsp \
             -t {threads} \
             --supermatrix_only \
             --supermatrix_iqtree \

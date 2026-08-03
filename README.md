@@ -1,21 +1,5 @@
 # BUSCO_Phylogenomics
 
-
-From reference gene set -> miniprot on genome -> gff to extract fasta sequences -> phylogenomics
-
-Need to compare "new" gene length with old (reference) gene length.
-
--V  discard any mRNAs with CDS having in-frame stop codons
--J  discard any mRNAs that either lack initial START codon or the terminal STOP codon, or have an in-frame stop codon (only print mRNAs with a fulll, valid CDS)
-
-If no V and J all genes remain, also duplicate, fragmented etc. Look carefully back at this.
-With these a lot of diversity is lost 
-
-https://open.bioqueue.org/home/knowledge/showKnowledge/sig/gffread
-https://lh3.github.io/miniprot/miniprot.html
-
-Only -V?
-
 [![install with bioconda](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg?style=flat)](http://bioconda.github.io/recipes/busco_phylogenomics/README.html)
 
 
@@ -189,6 +173,26 @@ python count_buscos.py -i BUSCO_runs
 This will report how many BUSCOs are complete and single-copy in what percentage of samples and print a presence/absence table for each BUSCO family.
 
 If you used BUSCO version 3 you should use the flag `--busco_version_3` as the output structure of this version of BUSCO is slightly different to that of versions 4 and 5.
+
+
+## Snakefile (work in progress / semi finished)
+From reference gene set -> miniprot on genome -> gff to extract fasta sequences -> phylogenomics. So you do not need to run BUSCO on all your genomes but just on reference genome and then we can fake BUSCO results.
+
+Need to compare "new" gene length with old (reference) gene length.
+
+For gffread:
+-V  discard any mRNAs with CDS having in-frame stop codons
+-J  discard any mRNAs that either lack initial START codon or the terminal STOP codon, or have an in-frame stop codon (only print mRNAs with a fulll, valid CDS)
+
+If no V and J all genes remain, also duplicate, fragmented etc. Look carefully back at this.
+With these a lot of diversity is lost 
+
+https://open.bioqueue.org/home/knowledge/showKnowledge/sig/gffread
+https://lh3.github.io/miniprot/miniprot.html
+
+Only -V?
+
+
 
 <details>
 <summary><strong>Publications that use the BUSCO_phylogenomics pipeline (to Feb 2026; N = 105):</strong></summary>
